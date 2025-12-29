@@ -1,0 +1,39 @@
+# --- Unity Тимчасові файли ---
+[Ll]ibrary/
+[Тт]emp/
+[Оо]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Уу]semess/
+MemoryCaptures/
+
+# --- Visual Studio / JetBrains файли ---
+.vs/
+.gradle/
+ExportedObj/
+.consulo/
+*.csproj
+*.unitypackage
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.opendb
+*.IDB
+*.VC.db
+*.assetproxy.bin
+*.assetproxy.bin.meta
+
+# --- Файли операційної системи ---
+.DS_Store
+Thumbs.db
+
+# --- Crashlytics / Інші сервіси ---
+sysinfo.txt
+crashlytics-build.properties
