@@ -11,14 +11,6 @@ public class Person
     public GameObject lyingPrefab;
 }
 
-[System.Serializable]
-public class SceneData
-{
-    public bool hasDoctor;
-    public string patientGender; 
-    public string[] visitors;
-}
-
 public class SceneManager : MonoBehaviour
 {
     [Header("Character Prefabs")]
@@ -31,18 +23,24 @@ public class SceneManager : MonoBehaviour
     [Header("Spawn Points")]
     public List<Transform> spawnPoints;
 
+    [Header("Current State")]
+    public List<InventoryItem> currentInventory;
+    private List<GameObject> activeCharacters = new List<GameObject>();
     private List<string> busyPeopleNames = new List<string>();
-    public void SpawnSceneFromPython(string jsonData)
+
+    public void SpawnSceneFromData(InitialSceneData data)
     {
-        ClearScene();
+        ClearCurrentScene();
         busyPeopleNames.Clear();
+        currentInventory = data.inventory;
 
-        SceneData data = JsonUtility.FromJson<SceneData>(jsonData);
-
-        if (data.hasDoctor)
+        if (data.hasDoctor && doctorPrefab != null)
         {
             Transform docPoint = spawnPoints.FirstOrDefault(p => p.GetComponent<SpawnPointInfo>()?.assignedRole == SpawnPointInfo.PointRole.Doctor);
-            if (docPoint != null) Spawn(doctorPrefab, docPoint, "Doctor");
+            if (docPoint != null)
+            {
+                Spawn(doctorPrefab, docPoint, "Doctor");
+            }
         }
 
         Transform patientPoint = spawnPoints.FirstOrDefault(p => p.GetComponent<SpawnPointInfo>()?.assignedRole == SpawnPointInfo.PointRole.Patient);
@@ -57,31 +55,30 @@ public class SceneManager : MonoBehaviour
                 Spawn(selected.lyingPrefab, patientPoint, "Patient");
                 busyPeopleNames.Add(selected.personName);
             }
-            else
-            {
-                Debug.LogWarning("Lying prefab not found for gender: " + data.patientGender);
-            }
         }
 
-        List<Transform> freePoints = spawnPoints
-            .Where(p => p.GetComponent<SpawnPointInfo>()?.assignedRole == SpawnPointInfo.PointRole.Any)
-            .OrderBy(x => Random.value).ToList();
-
-        for (int i = 0; i < data.visitors.Length && i < freePoints.Count; i++)
+        if (data.visitors != null)
         {
-            string visitorRole = data.visitors[i];
-            string gender = (visitorRole == "Woman") ? "Female" : "Male";
+            List<Transform> freePoints = spawnPoints
+                .Where(p => p.GetComponent<SpawnPointInfo>()?.assignedRole == SpawnPointInfo.PointRole.Any)
+                .OrderBy(x => Random.value).ToList();
 
-            Transform point = freePoints[i];
-            bool isSitting = point.GetComponent<SpawnPointInfo>().isSittingPoint;
-
-            Person selected = GetFreePerson(gender);
-            if (selected != null)
+            for (int i = 0; i < data.visitors.Count && i < freePoints.Count; i++)
             {
-                GameObject prefabToSpawn = isSitting ? (selected.sittingPrefab ?? selected.standingPrefab) : selected.standingPrefab;
+                var visitorData = data.visitors[i];
+                string gender = visitorData.gender;
 
-                Spawn(prefabToSpawn, point, visitorRole);
-                busyPeopleNames.Add(selected.personName);
+                Transform point = freePoints[i];
+                var pointInfo = point.GetComponent<SpawnPointInfo>();
+                bool isSitting = pointInfo != null && pointInfo.isSittingPoint;
+
+                Person selected = GetFreePerson(gender);
+                if (selected != null)
+                {
+                    GameObject prefabToSpawn = isSitting ? (selected.sittingPrefab ?? selected.standingPrefab) : selected.standingPrefab;
+                    Spawn(prefabToSpawn, point, visitorData.role);
+                    busyPeopleNames.Add(selected.personName);
+                }
             }
         }
     }
@@ -92,36 +89,33 @@ public class SceneManager : MonoBehaviour
         return list.FirstOrDefault(p => !busyPeopleNames.Contains(p.personName));
     }
 
-    private GameObject Spawn(GameObject prefab, Transform point, string roleName)
+    private void Spawn(GameObject prefab, Transform point, string roleName)
     {
-        if (prefab == null) return null;
+        if (prefab == null) return;
         GameObject go = Instantiate(prefab, point.position, point.rotation);
         go.name = roleName;
 
         if (roleName == "Patient") go.tag = "Patient";
 
-        return go;
+        activeCharacters.Add(go);
     }
 
-    private void ClearScene()
+    private void ClearCurrentScene()
     {
-        string[] targets = { "Doctor", "Patient", "Mother", "Male", "Visitor", "Woman" };
-
-        var allObjects = GameObject.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
-
-        foreach (var obj in allObjects)
+        foreach (GameObject charObj in activeCharacters)
         {
-            if (targets.Contains(obj.name) || obj.CompareTag("Patient"))
-            {
-                Destroy(obj);
-            }
+            if (charObj != null) Destroy(charObj);
         }
+        activeCharacters.Clear();
     }
 
-    [ContextMenu("Test Scene Spawn")]
-    public void TestSpawn()
+    public int GetItemCount(string itemName)
     {
-        string testJson = "{\"hasDoctor\":true,\"patientGender\":\"Female\",\"visitors\":[\"Female\",\"Male\"]}";
-        SpawnSceneFromPython(testJson);
+        if (currentInventory == null) return 0;
+        foreach (var item in currentInventory)
+        {
+            if (item.name == itemName) return item.count;
+        }
+        return 0;
     }
 }

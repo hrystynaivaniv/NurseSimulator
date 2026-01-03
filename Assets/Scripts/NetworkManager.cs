@@ -1,92 +1,97 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 using UnityEngine.Networking;
-using System.Collections;
-
-[System.Serializable]
-public class InitialSceneData
-{
-    public string roomType;
-    public string situationDescription;
-    public bool hasDoctor;
-    public string patientGender;
-    public string[] visitors;
-    public string[] inventory;  
-    public VitalSigns vitals;   
-}
-
-[System.Serializable]
-public class VitalSigns
-{
-    public string pain;
-    public string temp;
-    public string hr;
-    public string bp;
-    public string spo2;
-    public string rr;
-
-}
-
-[System.Serializable]
-public class ActionResponse
-{
-    public string textResponse;  
-    public VitalSigns updatedVitals; 
-}
 
 public class NetworkManager : MonoBehaviour
 {
-    public string baseUrl = ""; 
+    [Header("Settings")]
+    public string baseUrl = "https://boston-temptable-socioeconomically.ngrok-free.dev";
 
-    [Header("References")]
-    public SceneManager sceneManager;
+    [Header("Connections")]
     public SceneStatusManager statusManager;
+    public SceneManager sceneManager;
     public NurseInterface nurseInterface;
 
-    void Start()
+    private string currentSessionId;
+    private float actionStartTime;
+    private string currentInteractionMode = "freeform";
+    private List<InventoryItem> currentInventory = new List<InventoryItem>();
+
+    public void SetInteractionMode(string mode)
     {
-        if (!string.IsNullOrEmpty(baseUrl))
-        {
-            LoadInitialScene();
-        }
+        currentInteractionMode = mode;
     }
 
-    public void LoadInitialScene()
+    public void StartSession(string hospital, string mode, string interaction)
     {
-        StartCoroutine(GetRequest(baseUrl + "/init", (json) => {
-            InitialSceneData data = JsonUtility.FromJson<InitialSceneData>(json);
+        currentInteractionMode = interaction;
 
-            statusManager.UpdateValues(data.vitals.pain, data.vitals.temp, data.vitals.hr, data.vitals.bp, data.vitals.spo2, data.vitals.rr);
-            statusManager.UpdateInventory(data.inventory);
-            statusManager.UpdateDescription(data.situationDescription);
+        SessionRequest req = new SessionRequest
+        {
+            hospitalType = hospital,
+            mode = mode,
+            interactionMode = interaction
+        };
+        string json = JsonUtility.ToJson(req);
+
+        StartCoroutine(PostRequest(baseUrl + "/api/start", json, (res) => {
+            ProcessInitialData(res);
         }));
     }
 
-
-    public void SendPlayerAction(string target, string type, string message)
+    private void ProcessInitialData(string json)
     {
-        string jsonToSend = "{\"target\":\"" + target + "\", \"type\":\"" + type + "\", \"text\":\"" + message + "\"}";
+        InitialSceneData data = JsonUtility.FromJson<InitialSceneData>(json);
+        currentSessionId = data.sessionId;
+        currentInventory = data.inventory;
 
-        StartCoroutine(PostRequest(baseUrl + "/action", jsonToSend, (json) => {
+        statusManager.UpdateInventory(currentInventory);
+
+        statusManager.UpdateValues(
+            data.vitals.pain, data.vitals.temp, data.vitals.hr,
+            data.vitals.bp, data.vitals.spo2, data.vitals.rr
+        );
+
+        statusManager.UpdateDescription(data.situationDescription);
+        sceneManager.SpawnSceneFromData(data);
+        ResetDecisionTimer();
+    }
+
+    public void ResetDecisionTimer() => actionStartTime = Time.time;
+
+    public void SendPlayerAction(string target, string message)
+    {
+        if (string.IsNullOrEmpty(currentSessionId)) return;
+
+        int decisionTime = Mathf.RoundToInt(Time.time - actionStartTime);
+        string finalContent = message;
+
+        if (currentInteractionMode == "freeform")
+        {
+            finalContent = "[" + target + "] " + message;
+        }
+
+        string jsonToSend = "{\"actionType\":\"" + currentInteractionMode + "\",\"content\":\"" + finalContent + "\",\"decisionTimeSec\":" + decisionTime + "}";
+        string url = $"{baseUrl}/api/interact/{currentSessionId}";
+
+        StartCoroutine(PutRequest(url, jsonToSend, (json) => {
             ActionResponse response = JsonUtility.FromJson<ActionResponse>(json);
 
-            nurseInterface.ShowResponse(response.textResponse);
+            nurseInterface.ShowResponse(response, target);
 
-            if (response.updatedVitals != null)
-            {
-                statusManager.UpdateValues(response.updatedVitals.pain, response.updatedVitals.temp,
-                    response.updatedVitals.hr, response.updatedVitals.bp,
-                    response.updatedVitals.spo2, response.updatedVitals.rr);
-            }
+            statusManager.UpdateValues(
+                response.updatedVitals.pain,
+                response.updatedVitals.temp,
+                response.updatedVitals.hr,
+                response.updatedVitals.bp,
+                response.updatedVitals.spo2,
+                response.updatedVitals.rr
+            );
+
+            ResetDecisionTimer();
         }));
-    }
-
-    IEnumerator GetRequest(string url, System.Action<string> callback)
-    {
-        using (UnityWebRequest request = UnityWebRequest.Get(url))
-        {
-            yield return request.SendWebRequest();
-            if (request.result == UnityWebRequest.Result.Success) callback(request.downloadHandler.text);
-        }
     }
 
     IEnumerator PostRequest(string url, string json, System.Action<string> callback)
@@ -95,9 +100,50 @@ public class NetworkManager : MonoBehaviour
         byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
         request.uploadHandler = new UploadHandlerRaw(bodyRaw);
         request.downloadHandler = new DownloadHandlerBuffer();
+
         request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("ngrok-skip-browser-warning", "true");
 
         yield return request.SendWebRequest();
-        if (request.result == UnityWebRequest.Result.Success) callback(request.downloadHandler.text);
+
+        if (request.result == UnityWebRequest.Result.Success)
+            callback(request.downloadHandler.text);
+    }
+
+    IEnumerator PutRequest(string url, string json, System.Action<string> callback)
+    {
+        var request = new UnityWebRequest(url, "PUT");
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("ngrok-skip-browser-warning", "true");
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+            callback(request.downloadHandler.text);
+    }
+
+    public void DecreaseItemCount(string itemName)
+    {
+        var item = currentInventory.Find(i => i.name == itemName);
+        if (item != null && item.count > 0)
+        {
+            item.count--;
+            statusManager.UpdateInventory(currentInventory);
+        }
+    }
+
+    public bool HasItem(string itemName)
+    {
+        var item = currentInventory.Find(i => i.name == itemName);
+        return item != null && item.count > 0;
+    }
+
+    public string GetCurrentMode()
+    {
+        return currentInteractionMode;
     }
 }
