@@ -59,16 +59,14 @@ public class SceneStatusManager : MonoBehaviour
         if (dialoguePanel != null) dialoguePanel.SetActive(false);
     }
 
-    public void UpdateValues(VitalsData vitals)
+    public void UpdateValues(int pain, float temp, int hr, string bp, int spo2, int rr)
     {
-        if (vitals == null) return;
-
-        if (painText != null) painText.text = vitals.pain.ToString() + "/10";
-        if (tempText != null) tempText.text = vitals.temp.ToString("F1") + "°C";
-        if (hrText != null) hrText.text = vitals.hr.ToString();
-        if (bpText != null) bpText.text = vitals.bp;
-        if (spo2Text != null) spo2Text.text = vitals.spo2.ToString() + "%";
-        if (rrText != null) rrText.text = vitals.rr.ToString();
+        if (painText != null) painText.text = pain.ToString();
+        if (tempText != null) tempText.text = temp.ToString("F1") + "°C";
+        if (hrText != null) hrText.text = hr.ToString();
+        if (bpText != null) bpText.text = bp;
+        if (spo2Text != null) spo2Text.text = spo2.ToString() + "%";
+        if (rrText != null) rrText.text = rr.ToString();
     }
 
     public void UpdateDescription(string text)

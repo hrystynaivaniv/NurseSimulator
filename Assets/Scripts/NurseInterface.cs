@@ -1,83 +1,28 @@
 ﻿using UnityEngine;
 using TMPro;
 using UnityEngine.EventSystems;
-using System.Collections;
 
 public class NurseInterface : MonoBehaviour
 {
+    [Header("Connections")]
     public SceneStatusManager statusManager;
-    public NetworkManager networkManager;
 
-    [Header("Windows")]
+    [Header("Main Windows")]
     public GameObject dialogueWindow;
     public GameObject responseWindow;
-    public GameObject loadingInitialScreen;
-    public GameObject awaitingResponseScreen;
 
+    [Header("Text Elements")]
+    public TMP_InputField inputField;
+    public TMP_Text responseText;
 
     [Header("UI Panels")]
     public GameObject choicePanel;
     public GameObject inputPanel;
 
-    [Header("Input")]
-    public TMP_InputField inputField;
-    public TMP_Text responseText;
-
-    [Header("Buttons")]
+    [Header("GameOver UI")]
     public GameObject restartButton;
-    public GameObject closeResponseButton;
 
     private string currentTargetName;
-
-
-    private void OnEnable()
-    {
-        if (networkManager != null)
-        {
-            networkManager.OnActionReceived += OnActionFinished;
-            networkManager.OnErrorOccurred += HideLoadingAndShowError;
-            networkManager.OnSessionStarted += (data) => CloseLoadingOnly();
-            networkManager.OnLoadingStateChanged += HandleLoadingState;
-        }
-        else
-        {
-            Debug.LogError("NetworkManager is not assigned in NurseInterface!");
-        }
-    }
-
-    private void OnDisable()
-    {
-        if (networkManager != null)
-        {
-            networkManager.OnActionReceived -= OnActionFinished;
-            networkManager.OnErrorOccurred -= HideLoadingAndShowError;
-            networkManager.OnLoadingStateChanged -= HandleLoadingState;
-        }
-    }
-
-    private void HandleLoadingState(bool isActive, string type)
-    {
-        if (isActive)
-        {
-            if (type == "initial") ShowInitialLoadingScreen();
-            else ShowAwaitingResponseScreen();
-
-            if (EventSystem.current != null) EventSystem.current.enabled = false;
-        }
-        else
-        {
-            if (loadingInitialScreen != null) loadingInitialScreen.SetActive(false);
-            if (awaitingResponseScreen != null) awaitingResponseScreen.SetActive(false);
-
-            if (EventSystem.current != null) EventSystem.current.enabled = true;
-        }
-    }
-
-    private void OnActionFinished(ActionResponse response, string target, int stepTime)
-    {
-        int totalTime = networkManager.SimCore.TotalTimeSec;
-        ShowResponse(response, target, stepTime, totalTime);
-    }
 
     void Start()
     {
@@ -92,11 +37,9 @@ public class NurseInterface : MonoBehaviour
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             return;
 
-        if (inputField.isFocused) return;
-
         if (Input.GetMouseButtonDown(0))
         {
-            if (dialogueWindow.activeSelf || responseWindow.activeSelf || loadingInitialScreen.activeSelf || awaitingResponseScreen.activeSelf) return;
+            if (dialogueWindow.activeSelf || responseWindow.activeSelf) return;
 
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
@@ -105,54 +48,30 @@ public class NurseInterface : MonoBehaviour
             {
                 GameObject clickedObject = hit.collider.gameObject;
 
-                if (clickedObject.name == "Patient")
+                if (IsCharacter(clickedObject))
                 {
                     currentTargetName = clickedObject.name;
-                    networkManager.SimCore.ResetActionTimer();
-                    OpenDialogue();
+                    NetworkManager net = Object.FindFirstObjectByType<NetworkManager>();
+                    if (net != null) net.ResetDecisionTimer();
+
+                    ShowChoiceMenu();
                 }
             }
         }
     }
 
-    public void ShowInitialLoadingScreen()
+    bool IsCharacter(GameObject obj)
     {
-        if (loadingInitialScreen != null) loadingInitialScreen.SetActive(true);
-        if (dialogueWindow != null) dialogueWindow.SetActive(false);
-        if (statusManager != null) statusManager.OpenDialogueMode();
+        return obj.CompareTag("Patient") ||
+               obj.name.ToLower().Contains("character") ||
+               obj.name == "Doctor" ||
+               obj.name == "Visitor";
     }
 
-    public void ShowAwaitingResponseScreen()
-    {
-        if (awaitingResponseScreen != null) awaitingResponseScreen.SetActive(true);
-        if (dialogueWindow != null) dialogueWindow.SetActive(false);
-        if (statusManager != null) statusManager.OpenDialogueMode();
-    }
-
-    public void CloseLoadingOnly()
-    {
-        if (loadingInitialScreen != null) loadingInitialScreen.SetActive(false);
-        if (awaitingResponseScreen != null) awaitingResponseScreen.SetActive(false);
-
-        if (statusManager != null) statusManager.ReturnToGameMode();
-        if (EventSystem.current != null) EventSystem.current.enabled = true;
-    }
-
-    public void HideLoadingAndShowError(string error)
-    {
-        if (loadingInitialScreen != null) loadingInitialScreen.SetActive(false);
-        if (awaitingResponseScreen != null) awaitingResponseScreen.SetActive(false);
-
-        responseWindow.SetActive(true);
-        responseText.text = "<color=red>" + error + "</color>";
-
-        if (closeResponseButton != null) closeResponseButton.SetActive(true);
-        if (EventSystem.current != null) EventSystem.current.enabled = true;
-    }
-
-    void OpenDialogue()
+    void ShowChoiceMenu()
     {
         statusManager.OpenDialogueMode();
+
         dialogueWindow.SetActive(true);
         choicePanel.SetActive(true);
         inputPanel.SetActive(false);
@@ -161,10 +80,10 @@ public class NurseInterface : MonoBehaviour
 
     public void SelectMode(string mode)
     {
-        if (currentTargetName != "Patient") return;
-
         choicePanel.SetActive(false);
-        string currentMode = networkManager.GetCurrentMode();
+
+        NetworkManager net = Object.FindFirstObjectByType<NetworkManager>();
+        string currentMode = net.GetCurrentMode();
 
         if (currentMode == "standard")
         {
@@ -182,10 +101,11 @@ public class NurseInterface : MonoBehaviour
 
     public void SendStandardAction(string actionKey)
     {
-        if (EventSystem.current != null) EventSystem.current.enabled = false;
-
-        ShowAwaitingResponseScreen();
-        networkManager.SendPlayerAction(currentTargetName, actionKey);
+        NetworkManager net = Object.FindFirstObjectByType<NetworkManager>();
+        if (net != null)
+        {
+            net.SendPlayerAction(currentTargetName, actionKey);
+        }
 
         statusManager.standardActionsPanel.SetActive(false);
         dialogueWindow.SetActive(false);
@@ -196,55 +116,49 @@ public class NurseInterface : MonoBehaviour
         string text = inputField.text;
         if (string.IsNullOrEmpty(text)) return;
 
-        ShowAwaitingResponseScreen();
+        NetworkManager net = Object.FindFirstObjectByType<NetworkManager>();
+        if (net == null) return;
 
-        networkManager.SendPlayerAction(currentTargetName, text);
+        if (text.StartsWith("Apply "))
+        {
+            string itemName = text.Replace("Apply ", "").Split(new string[] { " to" }, System.StringSplitOptions.None)[0];
 
-        statusManager.UpdateInventory(networkManager.SimCore.Inventory);
+            if (!net.HasItem(itemName))
+            {
+                responseText.text = "Error: You don't have enough of this item!";
+                return;
+            }
 
+            net.DecreaseItemCount(itemName);
+        }
+
+        net.SendPlayerAction(currentTargetName, text);
         CloseDialogue();
     }
 
-    public void ShowResponse(ActionResponse response, string target, int stepTime, int totalTime)
+    public void ShowResponse(ActionResponse response, string target)
     {
-        if (awaitingResponseScreen != null) awaitingResponseScreen.SetActive(false);
-
         statusManager.OpenDialogueMode();
         responseWindow.SetActive(true);
 
-        string displayMessage = $"<b>Target:</b> {target}\n\n{response.textResponse}";
+        string displayMessage = "<b>Target:</b> " + target + "\n\n" + response.textResponse;
 
         if (!string.IsNullOrEmpty(response.verdict))
-            displayMessage += $"\n\n<b>Verdict:</b> {response.verdict}";
+            displayMessage += "\n\n<b>Verdict:</b> " + response.verdict;
 
-        string scoreSign = response.scoreDelta > 0 ? "+" : "";
-        displayMessage += $"\n\n<b>Score change:</b> {scoreSign}{response.scoreDelta} (Total: {response.totalScore})";
-        displayMessage += $"\n<b>Progress:</b> Step {response.stepCount} of {response.maxSteps}";
-
-        displayMessage += $"\n<b>Time spent:</b> {stepTime} sec";
-
-        bool endOfGame = response.isGameOver || !response.isAlive;
-
-        if (!response.isAlive) displayMessage += "\n\n<color=red><b>PATIENT IS DECEASED</b></color>";
+        if (response.scoreDelta != 0)
+            displayMessage += "\n<b>Score:</b> " + (response.scoreDelta > 0 ? "+" : "") + response.scoreDelta;
 
         if (response.isGameOver)
         {
             displayMessage += "\n\n<color=red><b>SIMULATION COMPLETED!</b></color>";
-            displayMessage += $"\n<color=yellow><b>Total Session Time: {FormatTime(totalTime)}</b></color>";
-        }
 
-        if (closeResponseButton != null) closeResponseButton.SetActive(!endOfGame);
-        if (restartButton != null) restartButton.SetActive(endOfGame);
+            if (restartButton != null) restartButton.SetActive(true);
+        }
 
         responseText.text = displayMessage;
     }
 
-    private string FormatTime(int seconds)
-    {
-        int minutes = seconds / 60;
-        int remainingSeconds = seconds % 60;
-        return string.Format("{0:00}:{1:00}", minutes, remainingSeconds);
-    }
     public void RestartGame()
     {
         UnityEngine.SceneManagement.SceneManager.LoadScene(0);
@@ -267,10 +181,15 @@ public class NurseInterface : MonoBehaviour
     {
         string selectedText = statusManager.itemsDropdown.options[index].text;
         string cleanName = selectedText;
+
         if (selectedText.Contains(" (x"))
+        {
             cleanName = selectedText.Split(" (x")[0];
+        }
 
         if (inputPanel.activeSelf)
+        {
             inputField.text = "Apply " + cleanName + " to " + currentTargetName;
+        }
     }
 }

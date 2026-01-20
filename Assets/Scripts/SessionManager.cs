@@ -14,6 +14,7 @@ public class SessionManager : MonoBehaviour
 
     public NetworkManager networkManager;
 
+    // Словник для мапінгу: Повна назва -> Короткий ключ
     private Dictionary<string, string> hospitalMapping = new Dictionary<string, string>
     {
         { "Emergency Room", "ER" },
@@ -26,8 +27,10 @@ public class SessionManager : MonoBehaviour
 
     public void OnGenerateButtonClicked()
     {
+        // Отримуємо текст, який бачить користувач
         string selectedDisplayText = hospitalDropdown.options[hospitalDropdown.value].text;
 
+        // Знаходимо короткий ключ у словнику. Якщо не знайдено — передаємо як є.
         string hospitalKey = hospitalMapping.ContainsKey(selectedDisplayText)
             ? hospitalMapping[selectedDisplayText]
             : selectedDisplayText;
@@ -35,6 +38,7 @@ public class SessionManager : MonoBehaviour
         string mode = modeDropdown.options[modeDropdown.value].text.ToLower();
         string interaction = interactionDropdown.options[interactionDropdown.value].text.ToLower();
 
+        // Передаємо короткий ключ "ER", "ICU" тощо на сервер
         networkManager.StartSession(hospitalKey, mode, interaction);
 
         setupCanvas.SetActive(false);
