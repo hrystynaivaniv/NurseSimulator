@@ -4,9 +4,9 @@ public class SpawnPointInfo : MonoBehaviour
 {
     public enum PointRole
     {
-        Any,     
-        Patient,  
-        Doctor    
+        Any,
+        Patient,
+        Doctor
     }
 
     [Header("Role")]
@@ -23,10 +23,10 @@ public class SpawnPointInfo : MonoBehaviour
                 Gizmos.color = Color.red;
                 break;
             case PointRole.Doctor:
-                Gizmos.color = Color.blue; 
+                Gizmos.color = Color.blue;
                 break;
             default:
-                Gizmos.color = Color.green; 
+                Gizmos.color = Color.green;
                 break;
         }
 

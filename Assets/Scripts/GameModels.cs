@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 
+public enum CharacterRole { Any, Patient, Doctor, Nurse, Visitor }
+
 [Serializable]
 public class InventoryItem
 {
@@ -35,8 +37,8 @@ public class InitialSceneData
     public string situationDescription;
     public bool hasDoctor;
     public string patientGender;
-    public List<VisitorData> visitors; // Використовуємо List
-    public List<InventoryItem> inventory; // Використовуємо List
+    public List<VisitorData> visitors;
+    public List<InventoryItem> inventory;
     public VitalsData vitals;
 }
 
@@ -48,7 +50,10 @@ public class ActionResponse
     public bool isAlive;
     public string verdict;
     public int scoreDelta;
+    public int totalScore;
     public bool isGameOver;
+    public int stepCount;
+    public int maxSteps;
 }
 
 [Serializable]

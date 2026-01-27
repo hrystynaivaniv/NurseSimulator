@@ -12,7 +12,7 @@ public class SessionManager : MonoBehaviour
     public TMP_Dropdown modeDropdown;
     public TMP_Dropdown interactionDropdown;
 
-    public NetworkManager networkManager;
+    public MockNetworkManager networkManager;
 
     // Словник для мапінгу: Повна назва -> Короткий ключ
     private Dictionary<string, string> hospitalMapping = new Dictionary<string, string>
