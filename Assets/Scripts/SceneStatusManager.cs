@@ -1,14 +1,25 @@
 ﻿using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class SceneStatusManager : MonoBehaviour
 {
+    [Header("Sliding Panel Settings")]
+    public TextMeshProUGUI toggleButtonText;
+    public RectTransform toggleButton;
+    public RectTransform descriptionPanelRT;
+    public float hiddenPosX = -95.7f;
+    public float visiblePosX = 118f;
+
     [Header("UI Panels")]
     public GameObject vitalPanel;
     public GameObject inventoryPanel;
-    public GameObject descriptionPanel;
+    public GameObject situationPanel;
     public GameObject dialoguePanel;
+    public GameObject environmentPanel;
+    public GameObject findingsPanel;
+    public GameObject actionHistoryPanel;
 
     [Header("UI Text Fields")]
     public TextMeshProUGUI painText;
@@ -40,7 +51,10 @@ public class SceneStatusManager : MonoBehaviour
         if (vitalPanel != null) vitalPanel.SetActive(false);
         if (inventoryPanel != null) inventoryPanel.SetActive(false);
         if (descriptionButton != null) descriptionButton.SetActive(false);
-        if (descriptionPanel != null) descriptionPanel.SetActive(false);
+        if (situationPanel != null) situationPanel.SetActive(false);
+        if (environmentPanel != null) environmentPanel.SetActive(false);
+        if (findingsPanel != null) findingsPanel.SetActive(false);
+        if (actionHistoryPanel != null) actionHistoryPanel.SetActive(false);
         if (standardActionsPanel != null) standardActionsPanel.SetActive(false);
     }
 
@@ -48,6 +62,9 @@ public class SceneStatusManager : MonoBehaviour
     {
         if (vitalPanel != null) vitalPanel.SetActive(false);
         if (inventoryPanel != null) inventoryPanel.SetActive(false);
+
+        isPanelVisible = false;
+        ToggleDescriptionPanel();
     }
 
     public void ReturnToGameMode()
@@ -55,7 +72,10 @@ public class SceneStatusManager : MonoBehaviour
         if (vitalPanel != null) vitalPanel.SetActive(true);
         if (inventoryPanel != null) inventoryPanel.SetActive(true);
         if (descriptionButton != null) descriptionButton.SetActive(true);
-        if (descriptionPanel != null) descriptionPanel.SetActive(false);
+        if (situationPanel != null) situationPanel.SetActive(false);
+        if (environmentPanel != null) environmentPanel.SetActive(false);
+        if (findingsPanel != null) findingsPanel.SetActive(false);
+        if (actionHistoryPanel != null) actionHistoryPanel.SetActive(false);
         if (dialoguePanel != null) dialoguePanel.SetActive(false);
     }
 
@@ -97,16 +117,82 @@ public class SceneStatusManager : MonoBehaviour
         itemsDropdown.AddOptions(options);
     }
 
-    public void ToggleDescription()
+    public void ToggleSituation()
     {
-        if (descriptionPanel == null) return;
-        bool isActive = descriptionPanel.activeSelf;
+        if (situationPanel == null) return;
+        bool isActive = situationPanel.activeSelf;
 
         if (!isActive)
         {
-            descriptionPanel.SetActive(true);
-            if (dialoguePanel != null) dialoguePanel.SetActive(false);
             OpenDescriptionMode();
+            if (situationPanel != null) situationPanel.SetActive(true);
+        }
+        else
+        {
+            ReturnToGameMode();
+        }
+    }
+
+
+    private bool isPanelVisible = true;
+
+    public void ToggleDescriptionPanel()
+    {
+        isPanelVisible = !isPanelVisible;
+
+        Vector2 newPos = descriptionPanelRT.anchoredPosition;
+
+        newPos.x = isPanelVisible ? visiblePosX : hiddenPosX;
+
+        descriptionPanelRT.anchoredPosition = newPos;
+        
+        if (toggleButtonText != null)
+        {
+            toggleButtonText.text = isPanelVisible ? "<" : ">";
+        }
+    }
+
+    public void ToggleEnvironment()
+    {
+        if (environmentPanel == null) return;
+        bool isActive = environmentPanel.activeSelf;
+
+        if (!isActive)
+        {
+            OpenDescriptionMode();
+            if (environmentPanel != null) environmentPanel.SetActive(true);
+        }
+        else
+        {
+            ReturnToGameMode();
+        }
+    }
+
+    public void ToggleFindings()
+    {
+        if (findingsPanel == null) return;
+        bool isActive = findingsPanel.activeSelf;
+
+        if (!isActive)
+        {
+            OpenDescriptionMode();
+            if (findingsPanel != null) findingsPanel.SetActive(true);
+        }
+        else
+        {
+            ReturnToGameMode();
+        }
+    }
+
+    public void ToggleActionHistory()
+    {
+        if (actionHistoryPanel == null) return;
+        bool isActive = actionHistoryPanel.activeSelf;
+
+        if (!isActive)
+        {
+            OpenDescriptionMode();
+            if (actionHistoryPanel != null) actionHistoryPanel.SetActive(false);
         }
         else
         {

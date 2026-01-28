@@ -214,10 +214,10 @@ public class NurseInterface : MonoBehaviour
         if (statusManager != null) statusManager.OpenDialogueMode();
         if (responseWindow != null) responseWindow.SetActive(true);
 
-        string displayMessage = $"<b>Ціль:</b> {target}\n\n{response.textResponse}";
+        string displayMessage = $"<b>Target:</b> {target}\n\n{response.textResponse}";
 
         if (!string.IsNullOrEmpty(response.verdict))
-            displayMessage += $"\n\n<b>Вердикт:</b> {response.verdict}";
+            displayMessage += $"\n\n<b>Result:</b> {response.verdict}";
 
         string scoreSign = response.scoreDelta > 0 ? "+" : "";
 
