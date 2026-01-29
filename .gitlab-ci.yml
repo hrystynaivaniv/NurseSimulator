@@ -1,0 +1,19 @@
+stages:
+  - build
+  - deploy
+
+build_web:
+  stage: build
+  script:
+    - echo "Build WebGL here"
+  artifacts:
+    paths:
+      - Build/WebGL
+    expire_in: 1 hour
+
+deploy_staging:
+  stage: deploy
+  script:
+    - rsync -avz Build/WebGL/ user@server:/var/www/medsim/
+  only:
+    - develop
