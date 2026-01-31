@@ -2,6 +2,8 @@
 using TMPro;
 using UnityEngine.EventSystems;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 public class NurseInterface : MonoBehaviour
 {
@@ -13,6 +15,8 @@ public class NurseInterface : MonoBehaviour
     public GameObject responseWindow;
     public GameObject loadingInitialScreen;
     public GameObject awaitingResponseScreen;
+    [SerializeField]
+    private ActionsHistorylController _actionsHistoryWindow;
 
     [Header("UI Panels")]
     public GameObject choicePanel;
@@ -30,6 +34,7 @@ public class NurseInterface : MonoBehaviour
     public StopwatchUI globalStopwatch;
 
     private string currentTargetName;
+    private List<ActionData> _actionsHistory = new List<ActionData> ();
 
     private void OnEnable()
     {
@@ -213,6 +218,8 @@ public class NurseInterface : MonoBehaviour
         if (statusManager != null && statusManager.standardActionsPanel != null)
             statusManager.standardActionsPanel.SetActive(false);
         if (dialogueWindow != null) dialogueWindow.SetActive(false);
+
+        _actionsHistory.Add(new ActionData() { action = actionKey });
     }
 
     public void ShowResponse(ActionResponse response, string target, int stepTime, int totalTime)
@@ -251,6 +258,8 @@ public class NurseInterface : MonoBehaviour
         if (restartButton != null) restartButton.SetActive(endOfGame);
 
         responseText.text = displayMessage;
+
+        _actionsHistory.LastOrDefault().response = response;
     }
 
     private string FormatTime(int seconds)
@@ -291,5 +300,11 @@ public class NurseInterface : MonoBehaviour
 
         if (inputPanel != null && inputPanel.activeSelf)
             inputField.text = "Apply " + cleanName + " to " + currentTargetName;
+    }
+
+    public void OnHistoryBtnClick()
+    {
+        _actionsHistoryWindow.Open();
+        _actionsHistoryWindow.SetUpData(_actionsHistory);
     }
 }

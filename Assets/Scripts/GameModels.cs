@@ -41,7 +41,11 @@ public class VitalsData
         bp = data.bp;
         spo2 = data.spo2;
         rr = data.rr;
-        spo2 = data.spo2;
+    }
+
+    public string ToString()
+    {
+        return $" pain = {pain},  temp = {temp},  hr = {hr},  bp = {bp},  spo2 = {spo2},  rr = {rr}";
     }
 }
 
@@ -78,4 +82,11 @@ public class SessionRequest
     public string hospitalType;
     public string mode;
     public string interactionMode;
+}
+
+[Serializable]
+public class ActionData
+{
+    public string action;
+    public ActionResponse response;
 }
