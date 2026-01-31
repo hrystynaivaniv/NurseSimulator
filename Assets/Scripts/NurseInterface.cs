@@ -6,7 +6,7 @@ using System.Collections;
 public class NurseInterface : MonoBehaviour
 {
     public SceneStatusManager statusManager;
-    public NetworkManager networkManager;
+    public MockNetworkManager networkManager;
 
     [Header("Windows")]
     public GameObject dialogueWindow;
@@ -26,6 +26,9 @@ public class NurseInterface : MonoBehaviour
     public GameObject restartButton;
     public GameObject closeResponseButton;
 
+    [Header("Stopwatch")]
+    public StopwatchUI globalStopwatch;
+
     private string currentTargetName;
 
     private void OnEnable()
@@ -36,7 +39,12 @@ public class NurseInterface : MonoBehaviour
             networkManager.OnErrorOccurred += HideLoadingAndShowError;
             networkManager.OnSessionStarted += (data) => CloseLoadingOnly();
             networkManager.OnLoadingStateChanged += HandleLoadingState;
-        }
+            networkManager.OnSessionStarted += (data) =>
+            {
+                CloseLoadingOnly();
+                if (globalStopwatch != null) globalStopwatch.StartStopwatch();
+            };
+        } 
     }
 
     private void OnDisable()
@@ -231,6 +239,10 @@ public class NurseInterface : MonoBehaviour
 
         if (response.isGameOver)
         {
+            if (response.isGameOver)
+            {
+                if (globalStopwatch != null) globalStopwatch.StopStopwatch();
+            }
             displayMessage += "\n\n<color=red><b>SIMULATION COMPLETED!</b></color>";
             displayMessage += $"\n<color=yellow><b>Total Session Time: {FormatTime(totalTime)}</b></color>";
         }
@@ -278,6 +290,6 @@ public class NurseInterface : MonoBehaviour
             cleanName = selectedText.Split(" (x")[0];
 
         if (inputPanel != null && inputPanel.activeSelf)
-            inputField.text = "Застосувати " + cleanName + " до " + currentTargetName;
+            inputField.text = "Apply " + cleanName + " to " + currentTargetName;
     }
 }

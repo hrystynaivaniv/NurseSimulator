@@ -17,7 +17,7 @@ public class SessionManager : MonoBehaviour, IUIElement
     public TMP_Dropdown modeDropdown;
     public TMP_Dropdown interactionDropdown;
 
-    public NetworkManager networkManager;
+    public MockNetworkManager networkManager;
 
     private Dictionary<string, string> _hospitalMapping = new Dictionary<string, string>
     {

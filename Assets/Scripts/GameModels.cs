@@ -27,6 +27,22 @@ public class VitalsData
     public string bp;
     public int spo2;
     public int rr;
+
+    public VitalsData()
+    {
+
+    }
+
+    public VitalsData(VitalsData data)
+    {
+        pain = data.pain;
+        temp = data.temp;
+        hr = data.hr;
+        bp = data.bp;
+        spo2 = data.spo2;
+        rr = data.rr;
+        spo2 = data.spo2;
+    }
 }
 
 [Serializable]

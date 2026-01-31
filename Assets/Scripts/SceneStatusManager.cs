@@ -13,7 +13,7 @@ public class SceneStatusManager : MonoBehaviour
     public float visiblePosX = 118f;
 
     [Header("UI Panels")]
-    public GameObject vitalPanel;
+    public VitalPanelController vitalPanel;
     public GameObject inventoryPanel;
     public GameObject situationPanel;
     public GameObject dialoguePanel;
@@ -48,7 +48,7 @@ public class SceneStatusManager : MonoBehaviour
 
     public void OpenDialogueMode()
     {
-        if (vitalPanel != null) vitalPanel.SetActive(false);
+        if (vitalPanel != null) vitalPanel.gameObject.SetActive(false);
         if (inventoryPanel != null) inventoryPanel.SetActive(false);
         if (descriptionButton != null) descriptionButton.SetActive(false);
         if (situationPanel != null) situationPanel.SetActive(false);
@@ -60,7 +60,7 @@ public class SceneStatusManager : MonoBehaviour
 
     public void OpenDescriptionMode()
     {
-        if (vitalPanel != null) vitalPanel.SetActive(false);
+        if (vitalPanel != null) vitalPanel.gameObject.SetActive(false);
         if (inventoryPanel != null) inventoryPanel.SetActive(false);
 
         isPanelVisible = false;
@@ -69,7 +69,7 @@ public class SceneStatusManager : MonoBehaviour
 
     public void ReturnToGameMode()
     {
-        if (vitalPanel != null) vitalPanel.SetActive(true);
+        if (vitalPanel != null) vitalPanel.gameObject.SetActive(true);
         if (inventoryPanel != null) inventoryPanel.SetActive(true);
         if (descriptionButton != null) descriptionButton.SetActive(true);
         if (situationPanel != null) situationPanel.SetActive(false);
@@ -83,12 +83,7 @@ public class SceneStatusManager : MonoBehaviour
     {
         if (vitals == null) return;
 
-        if (painText != null) painText.text = vitals.pain.ToString() + "/10";
-        if (tempText != null) tempText.text = vitals.temp.ToString("F1") + "°C";
-        if (hrText != null) hrText.text = vitals.hr.ToString();
-        if (bpText != null) bpText.text = vitals.bp;
-        if (spo2Text != null) spo2Text.text = vitals.spo2.ToString() + "%";
-        if (rrText != null) rrText.text = vitals.rr.ToString();
+        vitalPanel.UpdateValues(vitals);
     }
 
     public void UpdateDescription(string text)
@@ -117,22 +112,6 @@ public class SceneStatusManager : MonoBehaviour
         itemsDropdown.AddOptions(options);
     }
 
-    public void ToggleSituation()
-    {
-        if (situationPanel == null) return;
-        bool isActive = situationPanel.activeSelf;
-
-        if (!isActive)
-        {
-            OpenDescriptionMode();
-            if (situationPanel != null) situationPanel.SetActive(true);
-        }
-        else
-        {
-            ReturnToGameMode();
-        }
-    }
-
 
     private bool isPanelVisible = true;
 
@@ -152,15 +131,18 @@ public class SceneStatusManager : MonoBehaviour
         }
     }
 
-    public void ToggleEnvironment()
+    public void TogglePanel(GameObject panel)
     {
-        if (environmentPanel == null) return;
-        bool isActive = environmentPanel.activeSelf;
+        if (panel == null) return;
+
+        bool isActive = panel.activeSelf;
 
         if (!isActive)
         {
+            CloseAllInfoPanels();
+
             OpenDescriptionMode();
-            if (environmentPanel != null) environmentPanel.SetActive(true);
+            panel.SetActive(true);
         }
         else
         {
@@ -168,35 +150,11 @@ public class SceneStatusManager : MonoBehaviour
         }
     }
 
-    public void ToggleFindings()
+    private void CloseAllInfoPanels()
     {
-        if (findingsPanel == null) return;
-        bool isActive = findingsPanel.activeSelf;
-
-        if (!isActive)
-        {
-            OpenDescriptionMode();
-            if (findingsPanel != null) findingsPanel.SetActive(true);
-        }
-        else
-        {
-            ReturnToGameMode();
-        }
-    }
-
-    public void ToggleActionHistory()
-    {
-        if (actionHistoryPanel == null) return;
-        bool isActive = actionHistoryPanel.activeSelf;
-
-        if (!isActive)
-        {
-            OpenDescriptionMode();
-            if (actionHistoryPanel != null) actionHistoryPanel.SetActive(false);
-        }
-        else
-        {
-            ReturnToGameMode();
-        }
+        if (environmentPanel != null) environmentPanel.SetActive(false);
+        if (findingsPanel != null) findingsPanel.SetActive(false);
+        if (actionHistoryPanel != null) actionHistoryPanel.SetActive(false);
+        if (situationPanel != null) situationPanel.SetActive(false);
     }
 }

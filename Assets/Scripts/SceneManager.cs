@@ -29,7 +29,7 @@ public class SceneManager : MonoBehaviour
     private GameLogicController _logic = new GameLogicController();
     private List<GameObject> activeCharacters = new List<GameObject>();
 
-    public NetworkManager networkManager;
+    public MockNetworkManager networkManager;
 
     private void OnEnable()
     {

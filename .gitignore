@@ -1,18 +1,18 @@
 # --- Unity Тимчасові файли ---
-/[Ll]ibrary/
-/[Tt]emp/
-/[Oo]bj/
-/[Bb]uild/
-/[Bb]uilds/
-/[Ll]ogs/
-/[Mm]emoryCaptures/
-/UserSettings/
+[Ll]ibrary/
+[Тт]emp/
+[Оо]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Уу]semess/
+MemoryCaptures/
 
 # --- Visual Studio / JetBrains файли ---
 .vs/
 .gradle/
 ExportedObj/
-.idea/
+.consulo/
 *.csproj
 *.unitypackage
 *.sln
@@ -27,6 +27,8 @@ ExportedObj/
 *.opendb
 *.IDB
 *.VC.db
+*.assetproxy.bin
+*.assetproxy.bin.meta
 
 # --- Файли операційної системи ---
 .DS_Store
